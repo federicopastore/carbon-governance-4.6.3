@@ -27,6 +27,7 @@ import org.wso2.carbon.base.CarbonContextHolderBase;
 import org.wso2.carbon.base.UnloadTenantTask;
 import org.wso2.carbon.context.CarbonContext;
 import org.wso2.carbon.context.PrivilegedCarbonContext;
+import org.wso2.carbon.context.internal.OSGiDataHolder;
 import org.wso2.carbon.governance.api.cache.*;
 import org.wso2.carbon.governance.api.common.dataobjects.GovernanceArtifact;
 import org.wso2.carbon.governance.api.common.dataobjects.GovernanceArtifactImpl;
@@ -50,6 +51,7 @@ import org.wso2.carbon.registry.core.Registry;
 import org.wso2.carbon.registry.core.RegistryConstants;
 import org.wso2.carbon.registry.core.Resource;
 import org.wso2.carbon.registry.core.config.RegistryContext;
+import org.wso2.carbon.registry.core.dataaccess.DataAccessManager;
 import org.wso2.carbon.registry.core.exceptions.RegistryException;
 import org.wso2.carbon.registry.core.jdbc.handlers.RequestContext;
 import org.wso2.carbon.registry.core.secure.AuthorizationFailedException;
@@ -68,6 +70,9 @@ import org.wso2.carbon.utils.multitenancy.MultitenantUtils;
 import javax.cache.Cache;
 import javax.cache.CacheManager;
 import javax.cache.Caching;
+import javax.naming.Context;
+import javax.naming.NamingException;
+import javax.sql.DataSource;
 import javax.xml.namespace.QName;
 import javax.xml.stream.XMLInputFactory;
 import javax.xml.stream.XMLStreamException;
@@ -75,6 +80,10 @@ import javax.xml.stream.XMLStreamReader;
 import java.io.StringReader;
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
+import java.sql.Connection;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -124,6 +133,24 @@ public class GovernanceUtils {
      */
     public static void setRegistryService(RegistryService registryService) {
         GovernanceUtils.registryService = registryService;
+    }
+    
+    
+    public static Map getList(String tableName) throws NamingException, SQLException{
+    	
+			Context ctx =PrivilegedCarbonContext.getThreadLocalCarbonContext().getJNDIContext();
+			
+			DataSource ds= (DataSource) ctx.lookup("java:comp/env/jdbc/WSO2CarbonDB");
+			Connection conn = ds.getConnection();
+			Statement st = conn.createStatement();
+			ResultSet rs= st.executeQuery("select id, description from "+tableName);
+			Map<String, String> results= new HashMap<String, String>();
+			while(rs.next()){
+				String key = rs.getString("CODE");
+				String description= rs.getString("DESCRIPTION");
+				results.put(key, description);
+			}
+			return results;
     }
 
     // Method to register a list of governance artifact configurations.
